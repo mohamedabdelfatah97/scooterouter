@@ -1,0 +1,17 @@
+build/
+cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+*.cmake
+vcpkg/
+vcpkg_installed/
+scooterouter
+scooterouter_bench
+scooterouter_tests
+.DS_Store
+.vscode/
+data/maps/*.osm
+data/maps/*.pbf
+*.o
+*.a
+*.dylib
