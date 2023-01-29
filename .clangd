@@ -1,0 +1,6 @@
+CompileFlags:
+  Add:
+    - -std=c++17
+    - -I./include
+    - -isystem./build/vcpkg_installed/arm64-osx/include
+    - -isystem./build/vcpkg_installed/arm64-osx/include/SDL2
