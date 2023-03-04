@@ -7,6 +7,8 @@
 #include "routing/MissionController.h"
 #include "viz/Renderer.h"
 #include "routing/RouteOptimizer.h"
+#include "planner/AStar.h"
+#include "planner/Heuristic.h"
 
 int main(int argc, char** argv) {
     CLI::App app{"scooterouter — e-scooter collection route planner"};
@@ -57,6 +59,23 @@ int main(int argc, char** argv) {
                fleet.all().size(),
                fleet.collectible().size(),
                fleet.critical().size());
+    
+    // Quick A* test on Hamburg graph
+    fmt::print("[test] Running A* on Hamburg graph...\n");
+    sr::AStar astar(sr::Heuristic::euclidean());
+
+    // grab first two nodes from graph as test points
+    auto it = graph.allNodes().begin();
+    sr::NodeId n1 = it->first; ++it;
+    sr::NodeId n2 = it->first;
+    // advance n2 further to get a more interesting path
+    for (int i = 0; i < 1000 && it != graph.allNodes().end(); ++i, ++it)
+        n2 = it->first;
+
+    auto result = astar.plan(graph, n1, n2);
+    fmt::print("      path length: {} nodes\n", result.path.size());
+    fmt::print("      path cost:   {:.4f} km\n", result.cost);
+    fmt::print("      nodes expanded: {}\n\n", result.nodes_expanded);
 
     // Initialize renderer and open window
     fmt::print("[3/3] Initializing renderer...\n");
