@@ -54,7 +54,8 @@ bool Renderer::init() {
 }
 
 void Renderer::run(MissionController& mission, const Graph& graph,
-                   const FleetManager& fleet) {
+                   const FleetManager& fleet,
+                   const std::vector<NodeId>& path) {
     // Map panel is 75% of window width, right 25% reserved for HUD
     int map_panel_w = static_cast<int>(width_ * 0.75f);
 
@@ -80,7 +81,8 @@ void Renderer::run(MissionController& mission, const Graph& graph,
         SDL_RenderClear(renderer_);
 
         map_layer_.draw(renderer_, graph, proj);
-
+        path_layer_.draw(renderer_, path, graph, proj, 0);
+        
         SDL_RenderPresent(renderer_);
         SDL_Delay(16);
     }
