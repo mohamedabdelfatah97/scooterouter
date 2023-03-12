@@ -1,0 +1,16 @@
+id,lat,lon,battery_pct,status
+1,53.5505,9.9937,8,available
+2,53.5612,10.0134,42,available
+3,53.5448,10.0201,5,damaged
+4,53.5701,9.9876,71,available
+5,53.5534,10.0312,13,available
+6,53.5489,9.9754,88,available
+7,53.5645,10.0089,3,available
+8,53.5567,9.9823,55,damaged
+9,53.5423,10.0167,29,available
+10,53.5598,10.0245,17,available
+11,53.5458,9.9901,62,available
+12,53.5378,10.0056,7,available
+13,53.5623,9.9978,44,available
+14,53.5545,10.0134,91,available
+15,53.5689,9.9845,11,damaged
