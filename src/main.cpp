@@ -6,6 +6,7 @@
 #include "routing/FleetManager.h"
 #include "routing/MissionController.h"
 #include "routing/RouteOptimizer.h"
+#include "routing/PriorityScorer.h"
 #include "viz/Renderer.h"
 #include "planner/AStar.h"
 #include "planner/Heuristic.h"
@@ -54,37 +55,38 @@ int main(int argc, char** argv) {
     fmt::print("      {} scooters loaded ({} collectible, {} critical)\n\n",
                fleet.all().size(), fleet.collectible().size(), fleet.critical().size());
 
-    // debug: verify scooter projection
-    sr::CoordinateProjector debug_proj;
-    debug_proj.setup(loader.minBounds(), loader.maxBounds(), width, height, static_cast<int>(width * 0.75f));
-    fmt::print("[debug] Scooter screen positions:\n");
-    for (const auto& s : fleet.collectible()) {
-        auto p = debug_proj.project(s.geo);
-        fmt::print("      scooter {}: lat={:.4f} lon={:.4f} -> ({:.1f}, {:.1f})\n",
-                   s.id, s.geo.lat, s.geo.lon, p.x, p.y);
+    // Snap scooters to nearest graph nodes ranked by urgency
+    fmt::print("[test] Snapping scooters to graph...\n");
+    sr::PriorityScorer scorer;
+    sr::LatLon operator_pos = { 53.5505, 9.9937 };
+    auto ranked = scorer.ranked(fleet.collectible(), operator_pos);
+
+    std::vector<sr::NodeId> snapped;
+    for (const auto& s : ranked) {
+        sr::NodeId node = graph.nearestNode(s.geo);
+        snapped.push_back(node);
+        fmt::print("      scooter {} (battery {}%) -> node {}\n",
+                   s.id, s.battery_pct, node);
     }
     fmt::print("\n");
 
-    fmt::print("[test] Running A* on Hamburg graph...\n");
+    // Chain A* through top 5 prioritized scooters
+    fmt::print("[test] Running multi-stop A* route...\n");
     sr::AStar astar(sr::Heuristic::euclidean());
+    sr::NodeId current = graph.nearestNode(operator_pos);
 
-    auto it = graph.allNodes().begin();
-    sr::NodeId n1 = it->first; ++it;
-    sr::NodeId n2 = it->first;
-    for (int i = 0; i < 1000 && it != graph.allNodes().end(); ++i, ++it)
-        n2 = it->first;
+    std::vector<sr::NodeId> full_path;
+    double total_cost = 0.0;
 
-    auto result = astar.plan(graph, n1, n2);
-    fmt::print("      path length: {} nodes\n", result.path.size());
-    fmt::print("      path cost:   {:.4f} km\n", result.cost);
-    fmt::print("      nodes expanded: {}\n", result.nodes_expanded);
-
-    if (!result.path.empty()) {
-        auto& s = graph.getNode(result.path.front());
-        auto& e = graph.getNode(result.path.back());
-        fmt::print("      start: ({:.4f}, {:.4f})\n", s.geo.lat, s.geo.lon);
-        fmt::print("      end:   ({:.4f}, {:.4f})\n\n", e.geo.lat, e.geo.lon);
+    for (int i = 0; i < std::min(5, (int)snapped.size()); ++i) {
+        auto result = astar.plan(graph, current, snapped[i]);
+        if (!result.path.empty()) {
+            full_path.insert(full_path.end(), result.path.begin(), result.path.end());
+            total_cost += result.cost;
+            current = snapped[i];
+        }
     }
+    fmt::print("      total route: {} nodes, {:.2f} km\n\n", full_path.size(), total_cost);
 
     fmt::print("[3/3] Initializing renderer...\n");
     sr::Renderer renderer(width, height);
@@ -95,7 +97,7 @@ int main(int argc, char** argv) {
 
     sr::RouteOptimizer optimizer(nullptr);
     sr::MissionController mission(fleet, optimizer, graph);
-    renderer.run(mission, graph, fleet, result.path);
+    renderer.run(mission, graph, fleet, full_path);
 
     return 0;
 }
