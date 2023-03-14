@@ -55,34 +55,48 @@ bool Renderer::init() {
 
 void Renderer::run(MissionController& mission, const Graph& graph,
                    const FleetManager& fleet,
-                   const std::vector<NodeId>& path) {
-    // Map panel is 75% of window width, right 25% reserved for HUD
+                   const std::vector<NodeId>& initial_path) {
     int map_panel_w = static_cast<int>(width_ * 0.75f);
 
     CoordinateProjector proj;
     proj.setup(graph.minBounds(), graph.maxBounds(),
                width_, height_, map_panel_w);
 
+    // working copy of path — D* Lite can update this
+    std::vector<NodeId> path = initial_path;
+
     bool running = true;
     SDL_Event event;
 
-    // Wait for macOS focus before polling — prevents immediate loop exit
     SDL_Delay(500);
     SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
 
     while (running) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) running = false;
-            if (event.type == SDL_KEYDOWN &&
-                event.key.keysym.sym == SDLK_ESCAPE) running = false;
+            if (event.type == SDL_KEYDOWN) {
+                if (event.key.keysym.sym == SDLK_ESCAPE) running = false;
+                if (event.key.keysym.sym == SDLK_r) {
+                    fmt::print("[Renderer] R pressed — triggering D* Lite replan\n");
+                    replan_requested_ = true;
+                }
+            }
+        }
+
+        // handle replan request
+        if (replan_requested_) {
+            replan_requested_ = false;
+            fmt::print("[Renderer] Replanning...\n");
+            // D* Lite replan will be wired here next
         }
 
         SDL_SetRenderDrawColor(renderer_, 18, 18, 18, 255);
         SDL_RenderClear(renderer_);
 
         map_layer_.draw(renderer_, graph, proj);
+        scooter_layer_.draw(renderer_, fleet, proj);
         path_layer_.draw(renderer_, path, graph, proj, 0);
-        
+
         SDL_RenderPresent(renderer_);
         SDL_Delay(16);
     }

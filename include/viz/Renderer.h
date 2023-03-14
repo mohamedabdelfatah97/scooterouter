@@ -8,8 +8,6 @@
 #include "UIOverlay.h"
 #include <SDL2/SDL.h>
 #include <memory>
-#include <SDL2/SDL.h>
-#include <memory>
 #include <vector>
 
 namespace sr {
@@ -39,6 +37,7 @@ private:
     PathLayer     path_layer_;
     FrontierLayer frontier_layer_;
     UIOverlay     ui_overlay_;
+    bool replan_requested_ = false;
 };
 
 } // namespace sr
