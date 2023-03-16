@@ -88,10 +88,10 @@ void Renderer::run(MissionController& mission, Graph& graph,
             replan_requested_ = false;
             NodeId start = path.front();
             NodeId goal  = path.back();
-            // block first edge to simulate obstacle
             graph.updateEdgeCost(path[0], path[1], INFINITY_COST);
             dstar_.initialize(graph, start, goal);
             auto new_path = dstar_.extractPath();
+            frontier_layer_.triggerReplan(dstar_.lastReplannedNodes());
             if (!new_path.empty()) {
                 path = new_path;
                 fmt::print("[Renderer] Replan complete: {} nodes\n", path.size());
@@ -101,6 +101,7 @@ void Renderer::run(MissionController& mission, Graph& graph,
         SDL_SetRenderDrawColor(renderer_, 18, 18, 18, 255);
         SDL_RenderClear(renderer_);
 
+        frontier_layer_.draw(renderer_, graph, proj);
         map_layer_.draw(renderer_, graph, proj);
         scooter_layer_.draw(renderer_, fleet, proj);
         path_layer_.draw(renderer_, path, graph, proj, 0);
