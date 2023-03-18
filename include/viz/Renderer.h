@@ -28,6 +28,7 @@ private:
                 const FleetManager& fleet);
 
     int width_, height_;
+    int replan_count_ = 0;
     SDL_Window*   window_   = nullptr;
     SDL_Renderer* renderer_ = nullptr;
 
