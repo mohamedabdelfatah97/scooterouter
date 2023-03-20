@@ -86,6 +86,10 @@ void Renderer::run(MissionController& mission, Graph& graph,
                     paused_ = !paused_;
                     fmt::print("[Renderer] {}\n", paused_ ? "Paused" : "Resumed");
                 }
+                if (event.key.keysym.sym == SDLK_f) {
+                    show_fleet_ = !show_fleet_;
+                    fmt::print("[Renderer] Fleet markers {}\n", show_fleet_ ? "shown" : "hidden");
+                }
             }
         }
 
@@ -112,7 +116,8 @@ void Renderer::run(MissionController& mission, Graph& graph,
             SDL_RenderClear(renderer_);
 
             map_layer_.draw(renderer_, graph, proj);
-            scooter_layer_.draw(renderer_, fleet, proj);
+            if (show_fleet_)
+                scooter_layer_.draw(renderer_, fleet, proj);
             path_layer_.draw(renderer_, path, graph, proj, 0);
             frontier_layer_.draw(renderer_, graph, proj);
 
