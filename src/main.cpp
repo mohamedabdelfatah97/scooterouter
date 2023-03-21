@@ -55,30 +55,39 @@ int main(int argc, char** argv) {
     fmt::print("      {} scooters loaded ({} collectible, {} critical)\n\n",
                fleet.all().size(), fleet.collectible().size(), fleet.critical().size());
 
-    // Snap scooters to nearest graph nodes ranked by urgency
+// Snap scooters to nearest graph nodes
     fmt::print("[test] Snapping scooters to graph...\n");
-    sr::PriorityScorer scorer;
     sr::LatLon operator_pos = { 53.5505, 9.9937 };
+    sr::NodeId operator_node = graph.nearestNode(operator_pos);
+
+    // Rank by priority then optimize with nearest neighbor + 2-opt
+    sr::PriorityScorer scorer;
     auto ranked = scorer.ranked(fleet.collectible(), operator_pos);
 
-    std::vector<sr::NodeId> snapped;
-    for (const auto& s : ranked) {
-        sr::NodeId node = graph.nearestNode(s.geo);
-        snapped.push_back(node);
-        fmt::print("      scooter {} (battery {}%) -> node {}\n",
-                   s.id, s.battery_pct, node);
-    }
-    fmt::print("\n");
+    sr::RouteOptimizer optimizer(nullptr);
+    auto optimized = optimizer.optimize(ranked, operator_pos, graph);
 
-    // Chain A* through top 5 prioritized scooters
+    fmt::print("      Priority order:  ");
+    for (const auto& s : ranked)    fmt::print("{} ", s.id);
+    fmt::print("\n      Optimized order: ");
+    for (const auto& s : optimized) fmt::print("{} ", s.id);
+    fmt::print("\n\n");
+
+    // Snap optimized route to graph nodes
+    std::vector<sr::NodeId> snapped;
+    for (const auto& s : optimized) {
+        snapped.push_back(graph.nearestNode(s.geo));
+    }
+
+    // Chain A* through all snapped scooters
     fmt::print("[test] Running multi-stop A* route...\n");
     sr::AStar astar(sr::Heuristic::euclidean());
-    sr::NodeId current = graph.nearestNode(operator_pos);
+    sr::NodeId current = operator_node;
 
     std::vector<sr::NodeId> full_path;
     double total_cost = 0.0;
 
-    for (int i = 0; i < std::min(5, (int)snapped.size()); ++i) {
+    for (int i = 0; i < (int)snapped.size(); ++i) {
         auto result = astar.plan(graph, current, snapped[i]);
         if (!result.path.empty()) {
             full_path.insert(full_path.end(), result.path.begin(), result.path.end());
@@ -95,7 +104,6 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    sr::RouteOptimizer optimizer(nullptr);
     sr::MissionController mission(fleet, optimizer, graph);
     renderer.run(mission, graph, fleet, full_path);
 
