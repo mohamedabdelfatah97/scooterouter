@@ -57,7 +57,12 @@ bool Renderer::init() {
 
 void Renderer::run(MissionController& mission, Graph& graph,
                    const FleetManager& fleet,
-                   const std::vector<NodeId>& initial_path) {
+                   const std::vector<NodeId>& initial_path,
+                   LatLon van_pos,
+                   LatLon warehouse_pos) {
+    van_pos_       = van_pos;
+    warehouse_pos_ = warehouse_pos;
+
     int map_panel_w = static_cast<int>(width_ * 0.75f);
 
     CoordinateProjector proj;
