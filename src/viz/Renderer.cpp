@@ -3,38 +3,7 @@
 #include "planner/AStar.h"
 #include "planner/Heuristic.h"
 #include <fmt/core.h>
-
-static void drawVan(SDL_Renderer* r, int x, int y) {
-    // simple arrow/triangle pointing up
-    SDL_SetRenderDrawColor(r, 255, 255, 255, 255);
-    // body
-    SDL_RenderDrawLine(r, x-6, y+4, x+6, y+4);
-    SDL_RenderDrawLine(r, x-6, y+4, x-6, y-2);
-    SDL_RenderDrawLine(r, x+6, y+4, x+6, y-2);
-    SDL_RenderDrawLine(r, x-6, y-2, x,   y-8);
-    SDL_RenderDrawLine(r, x+6, y-2, x,   y-8);
-    // wheels
-    SDL_SetRenderDrawColor(r, 180, 180, 180, 255);
-    SDL_RenderDrawLine(r, x-5, y+4, x-5, y+7);
-    SDL_RenderDrawLine(r, x+5, y+4, x+5, y+7);
-}
-
-static void drawWarehouse(SDL_Renderer* r, int x, int y) {
-    // house shape: square base + triangle roof
-    SDL_SetRenderDrawColor(r, 255, 200, 50, 255);
-    // base
-    SDL_RenderDrawLine(r, x-8, y+6,  x+8, y+6);
-    SDL_RenderDrawLine(r, x-8, y+6,  x-8, y-2);
-    SDL_RenderDrawLine(r, x+8, y+6,  x+8, y-2);
-    SDL_RenderDrawLine(r, x-8, y-2,  x+8, y-2);
-    // roof
-    SDL_RenderDrawLine(r, x-8, y-2,  x,   y-10);
-    SDL_RenderDrawLine(r, x+8, y-2,  x,   y-10);
-    // door
-    SDL_RenderDrawLine(r, x-2, y+6,  x-2, y+1);
-    SDL_RenderDrawLine(r, x+2, y+6,  x+2, y+1);
-    SDL_RenderDrawLine(r, x-2, y+1,  x+2, y+1);
-}
+#include <SDL2/SDL_image.h>
 
 namespace sr {
 
@@ -42,6 +11,9 @@ Renderer::Renderer(int width, int height)
     : width_(width), height_(height) {}
 
 Renderer::~Renderer() {
+    if (van_texture_)       SDL_DestroyTexture(van_texture_);
+    if (warehouse_texture_) SDL_DestroyTexture(warehouse_texture_);
+    IMG_Quit();
     if (renderer_) SDL_DestroyRenderer(renderer_);
     if (window_)   SDL_DestroyWindow(window_);
     TTF_Quit();
@@ -59,7 +31,8 @@ bool Renderer::init() {
         return false;
     }
 
-    // SDL_WINDOW_ALWAYS_ON_TOP ensures window appears on macOS from terminal
+    IMG_Init(IMG_INIT_PNG);
+
     window_ = SDL_CreateWindow(
         "scooterouter",
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
@@ -71,7 +44,6 @@ bool Renderer::init() {
         return false;
     }
 
-    // Bring window to front — required on macOS to get focus
     SDL_RaiseWindow(window_);
 
     renderer_ = SDL_CreateRenderer(
@@ -81,6 +53,26 @@ bool Renderer::init() {
     if (!renderer_) {
         fmt::print("[Renderer] CreateRenderer failed: {}\n", SDL_GetError());
         return false;
+    }
+
+    SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
+
+    // load PNG icons
+    SDL_Surface* van_surf = IMG_Load("assets/van.png");
+    SDL_Surface* wh_surf  = IMG_Load("assets/warehouse.png");
+    if (van_surf) {
+        van_texture_ = SDL_CreateTextureFromSurface(renderer_, van_surf);
+        SDL_FreeSurface(van_surf);
+        fmt::print("[Renderer] van icon loaded\n");
+    } else {
+        fmt::print("[Renderer] van icon not found: {}\n", IMG_GetError());
+    }
+    if (wh_surf) {
+        warehouse_texture_ = SDL_CreateTextureFromSurface(renderer_, wh_surf);
+        SDL_FreeSurface(wh_surf);
+        fmt::print("[Renderer] warehouse icon loaded\n");
+    } else {
+        fmt::print("[Renderer] warehouse icon not found: {}\n", IMG_GetError());
     }
 
     fmt::print("[Renderer] Window {}x{} initialized\n", width_, height_);
@@ -162,13 +154,22 @@ void Renderer::run(MissionController& mission, Graph& graph,
             if (show_path_)
                 path_layer_.draw(renderer_, path, graph, proj, 0);
             frontier_layer_.draw(renderer_, graph, proj);
-            // draw warehouse
-            Vec2 wh = proj.project(warehouse_pos_);
-            drawWarehouse(renderer_, static_cast<int>(wh.x), static_cast<int>(wh.y));
 
-            // draw van at start position
+            // draw warehouse icon
+            Vec2 wh = proj.project(warehouse_pos_);
+            if (warehouse_texture_) {
+                SDL_Rect dst { static_cast<int>(wh.x) - 20,
+                               static_cast<int>(wh.y) - 20, 40, 40 };
+                SDL_RenderCopy(renderer_, warehouse_texture_, nullptr, &dst);
+            }
+
+            // draw van icon
             Vec2 vp = proj.project(van_pos_);
-            drawVan(renderer_, static_cast<int>(vp.x), static_cast<int>(vp.y));
+            if (van_texture_) {
+                SDL_Rect dst { static_cast<int>(vp.x) - 20,
+                               static_cast<int>(vp.y) - 12, 40, 24 };
+                SDL_RenderCopy(renderer_, van_texture_, nullptr, &dst);
+            }
 
             SDL_RenderPresent(renderer_);
         }
