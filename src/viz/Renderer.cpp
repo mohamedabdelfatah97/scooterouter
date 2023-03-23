@@ -162,6 +162,13 @@ void Renderer::run(MissionController& mission, Graph& graph,
             if (show_path_)
                 path_layer_.draw(renderer_, path, graph, proj, 0);
             frontier_layer_.draw(renderer_, graph, proj);
+            // draw warehouse
+            Vec2 wh = proj.project(warehouse_pos_);
+            drawWarehouse(renderer_, static_cast<int>(wh.x), static_cast<int>(wh.y));
+
+            // draw van at start position
+            Vec2 vp = proj.project(van_pos_);
+            drawVan(renderer_, static_cast<int>(vp.x), static_cast<int>(vp.y));
 
             SDL_RenderPresent(renderer_);
         }
