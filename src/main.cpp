@@ -126,14 +126,15 @@ int main(int argc, char** argv) {
     for (const auto& s : optimized) {
         sr::NodeId target = graph.nearestNode(s.geo);
         auto result = astar.plan(graph, current, target);
-        fmt::print("      leg to scooter {}: {} nodes, {:.2f} km\n",
-                   s.id, result.path.size(), result.cost);
         if (!result.path.empty()) {
             full_path.insert(full_path.end(), result.path.begin(), result.path.end());
             total_cost += result.cost;
             current = target;
+        } else {
+            fmt::print("      WARNING: no path to scooter {} at ({:.4f}, {:.4f}) — skipping\n",
+                       s.id, s.geo.lat, s.geo.lon);
         }
     }
-    
+
     return 0;
 }
