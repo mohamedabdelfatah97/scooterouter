@@ -3,6 +3,7 @@
 #include "core/Graph.h"
 #include "map/OSMLoader.h"
 #include "routing/FleetManager.h"
+#include "map/CoordinateProjector.h"
 
 int main(int argc, char** argv) {
     CLI::App app{"scooterouter — e-scooter collection route planner"};
@@ -54,6 +55,17 @@ int main(int argc, char** argv) {
                fleet.collectible().size(),
                fleet.critical().size());
 
+    // Quick projection sanity check
+    fmt::print("[test] Projecting bounds...\n");
+    sr::CoordinateProjector proj;
+    proj.setup(loader.minBounds(), loader.maxBounds(), 1400, 800, 1050);
+
+    auto top_left  = proj.project(loader.minBounds());
+    auto bot_right = proj.project(loader.maxBounds());
+    fmt::print("      top-left:  ({:.1f}, {:.1f})\n", top_left.x,  top_left.y);
+    fmt::print("      bot-right: ({:.1f}, {:.1f})\n", bot_right.x, bot_right.y);
+
     fmt::print("[3/3] Ready. SDL2 window coming next...\n");
     return 0;
 }
+
