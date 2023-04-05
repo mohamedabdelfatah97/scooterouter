@@ -1,4 +1,5 @@
 #include "viz/Renderer.h"
+#include "map/CoordinateProjector.h"
 #include <fmt/core.h>
 
 namespace sr {
@@ -49,6 +50,14 @@ bool Renderer::init() {
 
 void Renderer::run(MissionController& mission, const Graph& graph,
                    const FleetManager& fleet) {
+    // setup coordinate projector
+    // map panel takes 75% of window width, right 25% is for HUD
+    int map_panel_w = static_cast<int>(width_ * 0.75f);
+
+    CoordinateProjector proj;
+    proj.setup(graph.minBounds(), graph.maxBounds(),
+               width_, height_, map_panel_w);
+
     bool running = true;
     SDL_Event event;
 
@@ -60,13 +69,16 @@ void Renderer::run(MissionController& mission, const Graph& graph,
                 event.key.keysym.sym == SDLK_ESCAPE) running = false;
         }
 
-        // clear
+        // clear — very dark background
         SDL_SetRenderDrawColor(renderer_, 18, 18, 18, 255);
         SDL_RenderClear(renderer_);
 
+        // draw map
+        map_layer_.draw(renderer_, graph, proj);
+
         // present
         SDL_RenderPresent(renderer_);
-        SDL_Delay(16); // ~60fps
+        SDL_Delay(16);
     }
 }
 
