@@ -28,12 +28,13 @@ bool Renderer::init() {
         "scooterouter",
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
         width_, height_,
-        SDL_WINDOW_SHOWN
+        SDL_WINDOW_SHOWN | SDL_WINDOW_ALWAYS_ON_TOP
     );
     if (!window_) {
         fmt::print("[Renderer] CreateWindow failed: {}\n", SDL_GetError());
         return false;
     }
+    SDL_RaiseWindow(window_);
 
     renderer_ = SDL_CreateRenderer(
         window_, -1,
@@ -50,8 +51,6 @@ bool Renderer::init() {
 
 void Renderer::run(MissionController& mission, const Graph& graph,
                    const FleetManager& fleet) {
-    // setup coordinate projector
-    // map panel takes 75% of window width, right 25% is for HUD
     int map_panel_w = static_cast<int>(width_ * 0.75f);
 
     CoordinateProjector proj;
@@ -61,25 +60,27 @@ void Renderer::run(MissionController& mission, const Graph& graph,
     bool running = true;
     SDL_Event event;
 
+    SDL_Delay(500);
+    fmt::print("[Renderer] entering event loop\n");
+
     while (running) {
-        // handle events
         while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) running = false;
+            fmt::print("[Renderer] event type: {}\n", event.type);
+            if (event.type == SDL_QUIT) {
+                fmt::print("[Renderer] SDL_QUIT received\n");
+                running = false;
+            }
             if (event.type == SDL_KEYDOWN &&
                 event.key.keysym.sym == SDLK_ESCAPE) running = false;
         }
 
-        // clear — very dark background
         SDL_SetRenderDrawColor(renderer_, 18, 18, 18, 255);
         SDL_RenderClear(renderer_);
-
-        // draw map
         map_layer_.draw(renderer_, graph, proj);
-
-        // present
         SDL_RenderPresent(renderer_);
         SDL_Delay(16);
     }
+    fmt::print("[Renderer] event loop exited\n");
 }
 
 void Renderer::handleEvents(MissionController& mission) {}
