@@ -68,6 +68,7 @@ int main(int argc, char** argv) {
 
     sr::RouteOptimizer optimizer(nullptr);
     sr::MissionController mission(fleet, optimizer, graph);
+    renderer.run(mission, graph, fleet);
 
     return 0;
 }
