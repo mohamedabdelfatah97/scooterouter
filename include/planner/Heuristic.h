@@ -3,27 +3,46 @@
 #include "../core/Node.h"
 #include <cmath>
 #include <functional>
+#include <string>
 
 namespace sr {
 
-// Heuristic function type: takes two nodes, returns estimated cost
 using HeuristicFn = std::function<Cost(const Node&, const Node&)>;
 
 struct Heuristic {
-    // Straight-line geographic distance (default for road graphs)
-    static HeuristicFn euclidean();
+    static HeuristicFn euclidean() {
+        return [](const Node& a, const Node& b) -> Cost {
+            double dlat = a.geo.lat - b.geo.lat;
+            double dlon = a.geo.lon - b.geo.lon;
+            return std::sqrt(dlat*dlat + dlon*dlon) * 111.0;
+        };
+    }
 
-    // Manhattan distance on projected screen coords
-    static HeuristicFn manhattan();
+    static HeuristicFn manhattan() {
+        return [](const Node& a, const Node& b) -> Cost {
+            return (std::abs(a.geo.lat - b.geo.lat) +
+                    std::abs(a.geo.lon - b.geo.lon)) * 111.0;
+        };
+    }
 
-    // Octile distance — good for 8-connected grids
-    static HeuristicFn octile();
+    static HeuristicFn octile() {
+        return [](const Node& a, const Node& b) -> Cost {
+            double dlat = std::abs(a.geo.lat - b.geo.lat);
+            double dlon = std::abs(a.geo.lon - b.geo.lon);
+            return 111.0 * (dlat + dlon - 0.586 * std::min(dlat, dlon));
+        };
+    }
 
-    // Zero heuristic — turns A* into Dijkstra (used for benchmarking)
-    static HeuristicFn zero();
+    static HeuristicFn zero() {
+        return [](const Node&, const Node&) -> Cost { return 0.0; };
+    }
 
-    // Factory: select by name from CLI arg --heuristic
-    static HeuristicFn fromString(const std::string& name);
+    static HeuristicFn fromString(const std::string& name) {
+        if (name == "manhattan") return manhattan();
+        if (name == "octile")    return octile();
+        if (name == "zero")      return zero();
+        return euclidean();
+    }
 };
 
 } // namespace sr
