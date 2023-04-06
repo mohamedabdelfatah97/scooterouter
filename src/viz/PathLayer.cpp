@@ -6,7 +6,8 @@ void PathLayer::draw(SDL_Renderer* r,
                      const std::vector<NodeId>& path,
                      const Graph& graph,
                      const CoordinateProjector& proj,
-                     size_t visited_up_to) {
+                     size_t visited_up_to,
+                     PathColor color) {
     if (path.size() < 2) return;
 
     for (size_t i = 0; i + 1 < path.size(); ++i) {
@@ -15,13 +16,12 @@ void PathLayer::draw(SDL_Renderer* r,
         Vec2 from = proj.project(graph.getNode(path[i]).geo);
         Vec2 to   = proj.project(graph.getNode(path[i+1]).geo);
 
-        // visited segments gray, upcoming segments bright cyan
+        // visited segments gray, upcoming segments in algorithm color
         if (i < visited_up_to)
-            SDL_SetRenderDrawColor(r, 120, 120, 120, 255);
+            SDL_SetRenderDrawColor(r, 80, 80, 80, 255);
         else
-            SDL_SetRenderDrawColor(r, 0, 255, 255, 255);
+            SDL_SetRenderDrawColor(r, color.r, color.g, color.b, 255);
 
-        // draw 3px wide by offsetting lines
         for (int offset = -1; offset <= 1; ++offset) {
             SDL_RenderDrawLine(r,
                 static_cast<int>(from.x) + offset,
