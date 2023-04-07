@@ -7,7 +7,8 @@ void PathLayer::draw(SDL_Renderer* r,
                      const Graph& graph,
                      const CoordinateProjector& proj,
                      size_t visited_up_to,
-                     PathColor color) {
+                     PathColor color,
+                     PathOffset offset) {
     if (path.size() < 2) return;
 
     for (size_t i = 0; i + 1 < path.size(); ++i) {
@@ -16,23 +17,19 @@ void PathLayer::draw(SDL_Renderer* r,
         Vec2 from = proj.project(graph.getNode(path[i]).geo);
         Vec2 to   = proj.project(graph.getNode(path[i+1]).geo);
 
-        // visited segments gray, upcoming segments in algorithm color
         if (i < visited_up_to)
             SDL_SetRenderDrawColor(r, 80, 80, 80, 255);
         else
             SDL_SetRenderDrawColor(r, color.r, color.g, color.b, 255);
 
-        for (int offset = -1; offset <= 1; ++offset) {
-            SDL_RenderDrawLine(r,
-                static_cast<int>(from.x) + offset,
-                static_cast<int>(from.y),
-                static_cast<int>(to.x) + offset,
-                static_cast<int>(to.y));
-            SDL_RenderDrawLine(r,
-                static_cast<int>(from.x),
-                static_cast<int>(from.y) + offset,
-                static_cast<int>(to.x),
-                static_cast<int>(to.y) + offset);
+        int fx = static_cast<int>(from.x) + offset.dx;
+        int fy = static_cast<int>(from.y) + offset.dy;
+        int tx = static_cast<int>(to.x)   + offset.dx;
+        int ty = static_cast<int>(to.y)   + offset.dy;
+
+        for (int o = -1; o <= 1; ++o) {
+            SDL_RenderDrawLine(r, fx+o, fy, tx+o, ty);
+            SDL_RenderDrawLine(r, fx, fy+o, tx, ty+o);
         }
     }
 }
