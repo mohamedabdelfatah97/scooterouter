@@ -13,7 +13,7 @@ namespace sr {
 // updateEdge() triggers local replan without full restart.
 class DStarLite {
 public:
-    void initialize(const Graph& graph, NodeId start, NodeId goal);
+    void initialize(Graph& graph, NodeId start, NodeId goal);
 
     // Returns current best path from start to goal
     std::vector<NodeId> extractPath() const;
@@ -42,7 +42,7 @@ private:
     void updateNode(NodeId u);
     void computeShortestPath();
 
-    const Graph*   graph_  = nullptr;
+    Graph*   graph_  = nullptr;
     NodeId         start_  = INVALID_NODE;
     NodeId         goal_   = INVALID_NODE;
     Cost           k_m_    = 0.0;      // key modifier for start moves
