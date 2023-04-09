@@ -1,6 +1,6 @@
 # scooterouter
 
-![A* demo](assets/demo_astar.gif)
+![A* demo](assets/A*_gif.gif)
 
 A C++17 field operations route planner that dispatches a collection van across Hamburg to pick up e-scooters — prioritizing by battery level and damage status — and visualizes the full mission in real time using SDL2.
 
@@ -55,15 +55,15 @@ Benchmarks run on Apple M4, debug build.
 
 | A* (blue) | Dijkstra (green) |
 |-----------|-----------------|
-| ![A*](assets/demo_astar.png) | ![Dijkstra](assets/demo_dijkstra.png) |
+| ![A*](assets/A*_img.png) | ![Dijkstra](assets/Dijkstra_img.png) |
 
 | BFS (pink) | D* Lite (yellow) |
 |------------|-----------------|
-| ![BFS](assets/demo_bfs.png) | ![D* Lite](assets/demo_dstar.png) |
+| ![BFS](assets/BFS_img.png) | ![D* Lite](assets/D*_img.png) |
 
 | All algorithms overlaid | Legend panel |
 |------------------------|--------------|
-| ![All](assets/demo_all_algos.png) | ![Legend](assets/demo_legend.png) |
+| ![All](assets/all_algo.png) | ![Legend](assets/algos.png) |
 
 ---
 
