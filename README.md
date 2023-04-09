@@ -53,6 +53,8 @@ Benchmarks run on Apple M4, debug build.
 
 ## Screenshots
 
+![Legend](assets/algos.png)
+
 | A* (blue) | Dijkstra (green) |
 |-----------|-----------------|
 | ![A*](assets/A*_img.png) | ![Dijkstra](assets/Dijkstra_img.png) |
@@ -61,9 +63,7 @@ Benchmarks run on Apple M4, debug build.
 |------------|-----------------|
 | ![BFS](assets/BFS_img.png) | ![D* Lite](assets/D*_img.png) |
 
-| All algorithms overlaid | Legend panel |
-|------------------------|--------------|
-| ![All](assets/all_algo.png) | ![Legend](assets/algos.png) |
+![All algorithms overlaid](assets/all_algo.png)
 
 ---
 
