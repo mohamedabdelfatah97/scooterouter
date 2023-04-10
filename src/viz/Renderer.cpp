@@ -19,11 +19,13 @@ bool Renderer::init() {
         fmt::print("[Renderer] SDL_Init failed: {}\n", SDL_GetError());
         return false;
     }
+
     if (TTF_Init() != 0) {
         fmt::print("[Renderer] TTF_Init failed: {}\n", TTF_GetError());
         return false;
     }
 
+    // SDL_WINDOW_ALWAYS_ON_TOP ensures window appears on macOS from terminal
     window_ = SDL_CreateWindow(
         "scooterouter",
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
@@ -34,6 +36,8 @@ bool Renderer::init() {
         fmt::print("[Renderer] CreateWindow failed: {}\n", SDL_GetError());
         return false;
     }
+
+    // Bring window to front — required on macOS to get focus
     SDL_RaiseWindow(window_);
 
     renderer_ = SDL_CreateRenderer(
@@ -51,6 +55,7 @@ bool Renderer::init() {
 
 void Renderer::run(MissionController& mission, const Graph& graph,
                    const FleetManager& fleet) {
+    // Map panel is 75% of window width, right 25% reserved for HUD
     int map_panel_w = static_cast<int>(width_ * 0.75f);
 
     CoordinateProjector proj;
@@ -60,27 +65,25 @@ void Renderer::run(MissionController& mission, const Graph& graph,
     bool running = true;
     SDL_Event event;
 
+    // Wait for macOS focus before polling — prevents immediate loop exit
     SDL_Delay(500);
-    fmt::print("[Renderer] entering event loop\n");
+    SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
 
     while (running) {
         while (SDL_PollEvent(&event)) {
-            fmt::print("[Renderer] event type: {}\n", event.type);
-            if (event.type == SDL_QUIT) {
-                fmt::print("[Renderer] SDL_QUIT received\n");
-                running = false;
-            }
+            if (event.type == SDL_QUIT) running = false;
             if (event.type == SDL_KEYDOWN &&
                 event.key.keysym.sym == SDLK_ESCAPE) running = false;
         }
 
         SDL_SetRenderDrawColor(renderer_, 18, 18, 18, 255);
         SDL_RenderClear(renderer_);
+
         map_layer_.draw(renderer_, graph, proj);
+
         SDL_RenderPresent(renderer_);
         SDL_Delay(16);
     }
-    fmt::print("[Renderer] event loop exited\n");
 }
 
 void Renderer::handleEvents(MissionController& mission) {}
