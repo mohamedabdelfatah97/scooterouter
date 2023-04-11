@@ -5,8 +5,8 @@
 #include "map/CoordinateProjector.h"
 #include "routing/FleetManager.h"
 #include "routing/MissionController.h"
-#include "viz/Renderer.h"
 #include "routing/RouteOptimizer.h"
+#include "viz/Renderer.h"
 #include "planner/AStar.h"
 #include "planner/Heuristic.h"
 
@@ -34,7 +34,6 @@ int main(int argc, char** argv) {
     fmt::print("  heuristic:{}\n", heuristic);
     fmt::print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n");
 
-    // Load road graph from OSM
     fmt::print("[1/3] Loading map...\n");
     sr::Graph graph;
     sr::OSMLoader loader;
@@ -42,13 +41,10 @@ int main(int argc, char** argv) {
         fmt::print("Failed to load map: {}\n", map_path);
         return 1;
     }
-
-    auto min_b = loader.minBounds();
-    auto max_b = loader.maxBounds();
     fmt::print("      Bounds: ({:.4f}, {:.4f}) → ({:.4f}, {:.4f})\n\n",
-               min_b.lat, min_b.lon, max_b.lat, max_b.lon);
+               loader.minBounds().lat, loader.minBounds().lon,
+               loader.maxBounds().lat, loader.maxBounds().lon);
 
-    // Load scooter fleet
     fmt::print("[2/3] Loading fleet...\n");
     sr::FleetManager fleet;
     if (!fleet.loadFromCSV(fleet_path)) {
@@ -56,28 +52,30 @@ int main(int argc, char** argv) {
         return 1;
     }
     fmt::print("      {} scooters loaded ({} collectible, {} critical)\n\n",
-               fleet.all().size(),
-               fleet.collectible().size(),
-               fleet.critical().size());
-    
-    // Quick A* test on Hamburg graph
+               fleet.all().size(), fleet.collectible().size(), fleet.critical().size());
+
+    // A* test — pick two nodes 1000 apart in the graph
     fmt::print("[test] Running A* on Hamburg graph...\n");
     sr::AStar astar(sr::Heuristic::euclidean());
 
-    // grab first two nodes from graph as test points
     auto it = graph.allNodes().begin();
     sr::NodeId n1 = it->first; ++it;
     sr::NodeId n2 = it->first;
-    // advance n2 further to get a more interesting path
     for (int i = 0; i < 1000 && it != graph.allNodes().end(); ++i, ++it)
         n2 = it->first;
 
     auto result = astar.plan(graph, n1, n2);
     fmt::print("      path length: {} nodes\n", result.path.size());
     fmt::print("      path cost:   {:.4f} km\n", result.cost);
-    fmt::print("      nodes expanded: {}\n\n", result.nodes_expanded);
+    fmt::print("      nodes expanded: {}\n", result.nodes_expanded);
 
-    // Initialize renderer and open window
+    if (!result.path.empty()) {
+        auto& s = graph.getNode(result.path.front());
+        auto& e = graph.getNode(result.path.back());
+        fmt::print("      start: ({:.4f}, {:.4f})\n", s.geo.lat, s.geo.lon);
+        fmt::print("      end:   ({:.4f}, {:.4f})\n\n", e.geo.lat, e.geo.lon);
+    }
+
     fmt::print("[3/3] Initializing renderer...\n");
     sr::Renderer renderer(width, height);
     if (!renderer.init()) {
@@ -87,7 +85,7 @@ int main(int argc, char** argv) {
 
     sr::RouteOptimizer optimizer(nullptr);
     sr::MissionController mission(fleet, optimizer, graph);
-    renderer.run(mission, graph, fleet);
+    renderer.run(mission, graph, fleet, result.path);
 
     return 0;
 }

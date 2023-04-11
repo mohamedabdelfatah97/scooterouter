@@ -8,6 +8,9 @@
 #include "UIOverlay.h"
 #include <SDL2/SDL.h>
 #include <memory>
+#include <SDL2/SDL.h>
+#include <memory>
+#include <vector>
 
 namespace sr {
 
@@ -18,7 +21,8 @@ public:
 
     bool init();
     void run(MissionController& mission, const Graph& graph,
-             const FleetManager& fleet);
+         const FleetManager& fleet,
+         const std::vector<NodeId>& path = {});
 
 private:
     void handleEvents(MissionController& mission);
