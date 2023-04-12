@@ -54,7 +54,17 @@ int main(int argc, char** argv) {
     fmt::print("      {} scooters loaded ({} collectible, {} critical)\n\n",
                fleet.all().size(), fleet.collectible().size(), fleet.critical().size());
 
-    // A* test — pick two nodes 1000 apart in the graph
+    // debug: verify scooter projection
+    sr::CoordinateProjector debug_proj;
+    debug_proj.setup(loader.minBounds(), loader.maxBounds(), width, height, static_cast<int>(width * 0.75f));
+    fmt::print("[debug] Scooter screen positions:\n");
+    for (const auto& s : fleet.collectible()) {
+        auto p = debug_proj.project(s.geo);
+        fmt::print("      scooter {}: lat={:.4f} lon={:.4f} -> ({:.1f}, {:.1f})\n",
+                   s.id, s.geo.lat, s.geo.lon, p.x, p.y);
+    }
+    fmt::print("\n");
+
     fmt::print("[test] Running A* on Hamburg graph...\n");
     sr::AStar astar(sr::Heuristic::euclidean());
 
