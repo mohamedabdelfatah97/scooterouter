@@ -1,10 +1,10 @@
 # scooterouter
 
+A real-time route planner that dispatches a collection van across Hamburg to recover e-scooters from the streets — built in C++17 on top of real OpenStreetMap data.
+
+The van spawns at a random location on the Hamburg road network, scores and prioritizes scooters by battery level and damage status, computes the optimal collection order using 2-opt VRP, and animates the full mission live. Switch between 4 pathfinding algorithms and watch how each one routes differently across 25,299 nodes and 44,536 edges.
+
 ![A* demo](assets/A*_gif.gif)
-
-A C++17 field operations route planner that dispatches a collection van across Hamburg to pick up e-scooters — prioritizing by battery level and damage status — and visualizes the full mission in real time using SDL2.
-
-The van spawns at a random location on the real Hamburg road network, computes the optimal collection order using priority scoring + 2-opt VRP, chains A* paths between all scooters, and returns to a fixed warehouse. You can switch between 4 planning algorithms live and compare their routes side by side.
 
 ---
 
