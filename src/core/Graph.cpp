@@ -70,4 +70,19 @@ const std::unordered_map<NodeId, Node>& Graph::allNodes() const {
     return nodes_;
 }
 
+NodeId Graph::nearestNode(const LatLon& geo) const {
+    NodeId best = INVALID_NODE;
+    double best_dist = std::numeric_limits<double>::max();
+    for (const auto& [id, node] : nodes_) {
+        double dlat = node.geo.lat - geo.lat;
+        double dlon = node.geo.lon - geo.lon;
+        double dist = dlat*dlat + dlon*dlon;
+        if (dist < best_dist) {
+            best_dist = dist;
+            best = id;
+        }
+    }
+    return best;
+}
+
 } // namespace sr

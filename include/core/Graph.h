@@ -27,6 +27,7 @@ public:
     void updateEdgeCost(NodeId from, NodeId to, Cost new_cost);
 
     const std::unordered_map<NodeId, Node>& allNodes() const;
+    NodeId nearestNode(const LatLon& geo) const;
 
 private:
     std::unordered_map<NodeId, Node>              nodes_;
