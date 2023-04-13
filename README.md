@@ -43,7 +43,7 @@ The van spawns at a random location on the Hamburg road network, scores and prio
 |-----------|-------|-------------|----------------------|
 | A* | 🔵 Blue | Heuristic search with Euclidean distance. Fastest optimal planner. | 18ms |
 | Dijkstra | 🟢 Green | Exhaustive shortest path. Optimal but explores more nodes than A*. | 24.8ms |
-| BFS | 🩷 Pink | Unweighted breadth-first search. Ignores road costs, finds shortest hop count. | 12ms |
+| BFS | 🟣 Pink | Unweighted breadth-first search. Ignores road costs, finds shortest hop count. | 12ms |
 | D* Lite | 🟡 Yellow | Incremental replanner designed for dynamic obstacles. Uses A* path as fallback. | — |
 | Nearest neighbor + 2-opt | — | VRP ordering: greedy nearest-neighbor insertion followed by 2-opt local search to minimize total collection distance. | — |
 
