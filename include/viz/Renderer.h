@@ -41,6 +41,7 @@ private:
     DStarLite     dstar_;
     bool replan_requested_ = false;
     bool show_fleet_ = true;
+    bool show_path_ = true;
 };
 
 } // namespace sr

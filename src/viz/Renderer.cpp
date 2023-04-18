@@ -90,6 +90,10 @@ void Renderer::run(MissionController& mission, Graph& graph,
                     show_fleet_ = !show_fleet_;
                     fmt::print("[Renderer] Fleet markers {}\n", show_fleet_ ? "shown" : "hidden");
                 }
+                if (event.key.keysym.sym == SDLK_p) {
+                    show_path_ = !show_path_;
+                    fmt::print("[Renderer] Path {}\n", show_path_ ? "shown" : "hidden");
+                }
             }
         }
 
@@ -118,7 +122,8 @@ void Renderer::run(MissionController& mission, Graph& graph,
             map_layer_.draw(renderer_, graph, proj);
             if (show_fleet_)
                 scooter_layer_.draw(renderer_, fleet, proj);
-            path_layer_.draw(renderer_, path, graph, proj, 0);
+            if (show_path_)
+                path_layer_.draw(renderer_, path, graph, proj, 0);
             frontier_layer_.draw(renderer_, graph, proj);
 
             SDL_RenderPresent(renderer_);
