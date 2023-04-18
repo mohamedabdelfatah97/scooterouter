@@ -9,7 +9,7 @@
 #include <SDL2/SDL.h>
 #include <memory>
 #include <vector>
-
+#include "../planner/DStarLite.h"
 namespace sr {
 
 class Renderer {
@@ -18,10 +18,9 @@ public:
     ~Renderer();
 
     bool init();
-    void run(MissionController& mission, const Graph& graph,
-         const FleetManager& fleet,
-         const std::vector<NodeId>& path = {});
-
+    void run(MissionController& mission, Graph& graph,
+             const FleetManager& fleet,
+             const std::vector<NodeId>& path = {});
 private:
     void handleEvents(MissionController& mission);
     void render(const MissionController& mission,
@@ -37,6 +36,7 @@ private:
     PathLayer     path_layer_;
     FrontierLayer frontier_layer_;
     UIOverlay     ui_overlay_;
+    DStarLite     dstar_;
     bool replan_requested_ = false;
 };
 

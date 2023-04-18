@@ -53,7 +53,7 @@ bool Renderer::init() {
     return true;
 }
 
-void Renderer::run(MissionController& mission, const Graph& graph,
+void Renderer::run(MissionController& mission, Graph& graph,
                    const FleetManager& fleet,
                    const std::vector<NodeId>& initial_path) {
     int map_panel_w = static_cast<int>(width_ * 0.75f);
@@ -84,10 +84,18 @@ void Renderer::run(MissionController& mission, const Graph& graph,
         }
 
         // handle replan request
-        if (replan_requested_) {
+        if (replan_requested_ && path.size() >= 2) {
             replan_requested_ = false;
-            fmt::print("[Renderer] Replanning...\n");
-            // D* Lite replan will be wired here next
+            NodeId start = path.front();
+            NodeId goal  = path.back();
+            // block first edge to simulate obstacle
+            graph.updateEdgeCost(path[0], path[1], INFINITY_COST);
+            dstar_.initialize(graph, start, goal);
+            auto new_path = dstar_.extractPath();
+            if (!new_path.empty()) {
+                path = new_path;
+                fmt::print("[Renderer] Replan complete: {} nodes\n", path.size());
+            }
         }
 
         SDL_SetRenderDrawColor(renderer_, 18, 18, 18, 255);
