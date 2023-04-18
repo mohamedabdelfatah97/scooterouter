@@ -102,6 +102,8 @@ void Renderer::run(MissionController& mission, Graph& graph,
             fmt::print("[Renderer] Replan: {} frontier nodes, {} path nodes\n",
                        frontier_nodes.size(), result.path.size());
             if (!result.path.empty()) path = result.path;
+            replan_count_++;
+            fmt::print("[Renderer] Replan #{}\n", replan_count_);
         }
 
         SDL_SetRenderDrawColor(renderer_, 18, 18, 18, 255);
