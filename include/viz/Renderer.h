@@ -29,6 +29,7 @@ private:
 
     int width_, height_;
     int replan_count_ = 0;
+    bool paused_ = false;
     SDL_Window*   window_   = nullptr;
     SDL_Renderer* renderer_ = nullptr;
 

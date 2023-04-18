@@ -82,6 +82,10 @@ void Renderer::run(MissionController& mission, Graph& graph,
                     fmt::print("[Renderer] R pressed — triggering replan\n");
                     replan_requested_ = true;
                 }
+                if (event.key.keysym.sym == SDLK_SPACE) {
+                    paused_ = !paused_;
+                    fmt::print("[Renderer] {}\n", paused_ ? "Paused" : "Resumed");
+                }
             }
         }
 
@@ -90,31 +94,30 @@ void Renderer::run(MissionController& mission, Graph& graph,
             NodeId start = original_path.front();
             NodeId goal  = original_path.back();
 
-            // animate first 50 nodes of path as frontier
             std::vector<NodeId> frontier_nodes;
             for (size_t i = 0; i < std::min((size_t)50, original_path.size()); ++i)
                 frontier_nodes.push_back(original_path[i]);
             frontier_layer_.triggerReplan(frontier_nodes);
 
-            // replan with A*
             AStar astar(Heuristic::euclidean());
             auto result = astar.plan(graph, start, goal);
-            fmt::print("[Renderer] Replan: {} frontier nodes, {} path nodes\n",
-                       frontier_nodes.size(), result.path.size());
             if (!result.path.empty()) path = result.path;
             replan_count_++;
-            fmt::print("[Renderer] Replan #{}\n", replan_count_);
+            fmt::print("[Renderer] Replan #{}: {} frontier nodes, {} path nodes\n",
+                       replan_count_, frontier_nodes.size(), result.path.size());
         }
 
-        SDL_SetRenderDrawColor(renderer_, 18, 18, 18, 255);
-        SDL_RenderClear(renderer_);
+        if (!paused_) {
+            SDL_SetRenderDrawColor(renderer_, 18, 18, 18, 255);
+            SDL_RenderClear(renderer_);
 
-        map_layer_.draw(renderer_, graph, proj);
-        scooter_layer_.draw(renderer_, fleet, proj);
-        path_layer_.draw(renderer_, path, graph, proj, 0);
-        frontier_layer_.draw(renderer_, graph, proj);
+            map_layer_.draw(renderer_, graph, proj);
+            scooter_layer_.draw(renderer_, fleet, proj);
+            path_layer_.draw(renderer_, path, graph, proj, 0);
+            frontier_layer_.draw(renderer_, graph, proj);
 
-        SDL_RenderPresent(renderer_);
+            SDL_RenderPresent(renderer_);
+        }
         SDL_Delay(16);
     }
 }
