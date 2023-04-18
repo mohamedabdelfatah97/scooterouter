@@ -75,7 +75,7 @@ void DStarLite::computeShortestPath() {
             continue;
         }
 
-        if (calculateKey(start_) <= k_old && 
+        if (!(k_old < calculateKey(start_)) && 
             std::abs(states_[start_].g - states_[start_].rhs) < 1e-9) {
             open_list_.pop();
             break;

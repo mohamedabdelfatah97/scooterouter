@@ -1,5 +1,7 @@
 #include "viz/Renderer.h"
 #include "map/CoordinateProjector.h"
+#include "planner/AStar.h"
+#include "planner/Heuristic.h"
 #include <fmt/core.h>
 
 namespace sr {
@@ -62,7 +64,7 @@ void Renderer::run(MissionController& mission, Graph& graph,
     proj.setup(graph.minBounds(), graph.maxBounds(),
                width_, height_, map_panel_w);
 
-    // working copy of path — D* Lite can update this
+    const std::vector<NodeId> original_path = initial_path;
     std::vector<NodeId> path = initial_path;
 
     bool running = true;
@@ -77,34 +79,38 @@ void Renderer::run(MissionController& mission, Graph& graph,
             if (event.type == SDL_KEYDOWN) {
                 if (event.key.keysym.sym == SDLK_ESCAPE) running = false;
                 if (event.key.keysym.sym == SDLK_r) {
-                    fmt::print("[Renderer] R pressed — triggering D* Lite replan\n");
+                    fmt::print("[Renderer] R pressed — triggering replan\n");
                     replan_requested_ = true;
                 }
             }
         }
 
-        // handle replan request
-        if (replan_requested_ && path.size() >= 2) {
+        if (replan_requested_ && original_path.size() >= 2) {
             replan_requested_ = false;
-            NodeId start = path.front();
-            NodeId goal  = path.back();
-            graph.updateEdgeCost(path[0], path[1], INFINITY_COST);
-            dstar_.initialize(graph, start, goal);
-            auto new_path = dstar_.extractPath();
-            frontier_layer_.triggerReplan(dstar_.lastReplannedNodes());
-            if (!new_path.empty()) {
-                path = new_path;
-                fmt::print("[Renderer] Replan complete: {} nodes\n", path.size());
-            }
+            NodeId start = original_path.front();
+            NodeId goal  = original_path.back();
+
+            // animate first 50 nodes of path as frontier
+            std::vector<NodeId> frontier_nodes;
+            for (size_t i = 0; i < std::min((size_t)50, original_path.size()); ++i)
+                frontier_nodes.push_back(original_path[i]);
+            frontier_layer_.triggerReplan(frontier_nodes);
+
+            // replan with A*
+            AStar astar(Heuristic::euclidean());
+            auto result = astar.plan(graph, start, goal);
+            fmt::print("[Renderer] Replan: {} frontier nodes, {} path nodes\n",
+                       frontier_nodes.size(), result.path.size());
+            if (!result.path.empty()) path = result.path;
         }
 
         SDL_SetRenderDrawColor(renderer_, 18, 18, 18, 255);
         SDL_RenderClear(renderer_);
 
-        frontier_layer_.draw(renderer_, graph, proj);
         map_layer_.draw(renderer_, graph, proj);
         scooter_layer_.draw(renderer_, fleet, proj);
         path_layer_.draw(renderer_, path, graph, proj, 0);
+        frontier_layer_.draw(renderer_, graph, proj);
 
         SDL_RenderPresent(renderer_);
         SDL_Delay(16);
