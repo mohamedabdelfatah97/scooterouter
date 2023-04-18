@@ -7,7 +7,6 @@
 
 namespace sr {
 
-// Flashes replanned nodes in orange, fades over ~800ms
 class FrontierLayer {
 public:
     void triggerReplan(const std::vector<NodeId>& nodes);
