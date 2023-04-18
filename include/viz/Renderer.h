@@ -40,6 +40,7 @@ private:
     UIOverlay     ui_overlay_;
     DStarLite     dstar_;
     bool replan_requested_ = false;
+    bool show_fleet_ = true;
 };
 
 } // namespace sr
