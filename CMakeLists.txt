@@ -7,6 +7,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(SDL2 CONFIG REQUIRED)
 find_package(SDL2_ttf CONFIG REQUIRED)
+find_package(SDL2_image CONFIG REQUIRED)
 find_package(CLI11 CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
@@ -34,6 +35,7 @@ target_link_libraries(scooterouter PRIVATE
     $<TARGET_NAME_IF_EXISTS:SDL2::SDL2main>
     $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>
     $<IF:$<TARGET_EXISTS:SDL2_ttf::SDL2_ttf>,SDL2_ttf::SDL2_ttf,SDL2_ttf::SDL2_ttf-static>
+    $<IF:$<TARGET_EXISTS:SDL2_image::SDL2_image>,SDL2_image::SDL2_image,SDL2_image::SDL2_image-static>
     CLI11::CLI11
     fmt::fmt
     nlohmann_json::nlohmann_json
@@ -77,7 +79,6 @@ target_link_libraries(scooterouter_tests PRIVATE
 enable_testing()
 add_test(NAME scooterouter_tests COMMAND scooterouter_tests)
 
-# libosmium requires expat for XML parsing
 find_package(expat CONFIG REQUIRED)
 target_link_libraries(scooterouter PRIVATE expat::expat)
 target_link_libraries(scooterouter_tests PRIVATE expat::expat)

@@ -5,6 +5,7 @@
   "dependencies": [
     "sdl2",
     "sdl2-ttf",
+    "sdl2-image",
     "cli11",
     "fmt",
     "nlohmann-json",
