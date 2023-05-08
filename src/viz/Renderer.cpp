@@ -4,6 +4,38 @@
 #include "planner/Heuristic.h"
 #include <fmt/core.h>
 
+static void drawVan(SDL_Renderer* r, int x, int y) {
+    // simple arrow/triangle pointing up
+    SDL_SetRenderDrawColor(r, 255, 255, 255, 255);
+    // body
+    SDL_RenderDrawLine(r, x-6, y+4, x+6, y+4);
+    SDL_RenderDrawLine(r, x-6, y+4, x-6, y-2);
+    SDL_RenderDrawLine(r, x+6, y+4, x+6, y-2);
+    SDL_RenderDrawLine(r, x-6, y-2, x,   y-8);
+    SDL_RenderDrawLine(r, x+6, y-2, x,   y-8);
+    // wheels
+    SDL_SetRenderDrawColor(r, 180, 180, 180, 255);
+    SDL_RenderDrawLine(r, x-5, y+4, x-5, y+7);
+    SDL_RenderDrawLine(r, x+5, y+4, x+5, y+7);
+}
+
+static void drawWarehouse(SDL_Renderer* r, int x, int y) {
+    // house shape: square base + triangle roof
+    SDL_SetRenderDrawColor(r, 255, 200, 50, 255);
+    // base
+    SDL_RenderDrawLine(r, x-8, y+6,  x+8, y+6);
+    SDL_RenderDrawLine(r, x-8, y+6,  x-8, y-2);
+    SDL_RenderDrawLine(r, x+8, y+6,  x+8, y-2);
+    SDL_RenderDrawLine(r, x-8, y-2,  x+8, y-2);
+    // roof
+    SDL_RenderDrawLine(r, x-8, y-2,  x,   y-10);
+    SDL_RenderDrawLine(r, x+8, y-2,  x,   y-10);
+    // door
+    SDL_RenderDrawLine(r, x-2, y+6,  x-2, y+1);
+    SDL_RenderDrawLine(r, x+2, y+6,  x+2, y+1);
+    SDL_RenderDrawLine(r, x-2, y+1,  x+2, y+1);
+}
+
 namespace sr {
 
 Renderer::Renderer(int width, int height)
