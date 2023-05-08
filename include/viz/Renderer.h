@@ -9,6 +9,7 @@
 #include "UIOverlay.h"
 #include "../planner/DStarLite.h"
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 #include <memory>
 #include <vector>
 
@@ -33,11 +34,11 @@ private:
                 const FleetManager& fleet);
 
     int width_, height_;
-    int  replan_count_    = 0;
-    bool paused_          = false;
+    int  replan_count_     = 0;
+    bool paused_           = false;
     bool replan_requested_ = false;
-    bool show_fleet_      = true;
-    bool show_path_       = true;
+    bool show_fleet_       = true;
+    bool show_path_        = true;
 
     SDL_Window*   window_   = nullptr;
     SDL_Renderer* renderer_ = nullptr;
@@ -51,6 +52,9 @@ private:
 
     LatLon van_pos_       = {0.0, 0.0};
     LatLon warehouse_pos_ = {0.0, 0.0};
+
+    SDL_Texture* van_texture_       = nullptr;
+    SDL_Texture* warehouse_texture_ = nullptr;
 };
 
 } // namespace sr
