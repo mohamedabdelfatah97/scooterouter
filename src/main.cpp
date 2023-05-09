@@ -123,5 +123,17 @@ int main(int argc, char** argv) {
     sr::MissionController mission(fleet, optimizer, graph);
     renderer.run(mission, graph, fleet, full_path, van_pos, warehouse_pos);
 
+    for (const auto& s : optimized) {
+        sr::NodeId target = graph.nearestNode(s.geo);
+        auto result = astar.plan(graph, current, target);
+        fmt::print("      leg to scooter {}: {} nodes, {:.2f} km\n",
+                   s.id, result.path.size(), result.cost);
+        if (!result.path.empty()) {
+            full_path.insert(full_path.end(), result.path.begin(), result.path.end());
+            total_cost += result.cost;
+            current = target;
+        }
+    }
+    
     return 0;
 }
