@@ -73,15 +73,24 @@ void FleetManager::onFleetChanged(ChangeCallback cb) {
 void FleetManager::generateRandom(const Graph& graph, int count, unsigned int seed) {
     std::mt19937 rng(seed);
 
-    // collect all node ids
+    LatLon min_b = graph.minBounds();
+    LatLon max_b = graph.maxBounds();
+    double lat_margin = (max_b.lat - min_b.lat) * 0.1;
+    double lon_margin = (max_b.lon - min_b.lon) * 0.1;
+
     std::vector<NodeId> node_ids;
-    node_ids.reserve(graph.allNodes().size());
-    for (const auto& [id, node] : graph.allNodes())
-        node_ids.push_back(id);
+    for (const auto& [id, node] : graph.allNodes()) {
+        if (!graph.neighbors(id).empty() &&
+            node.geo.lat > min_b.lat + lat_margin &&
+            node.geo.lat < max_b.lat - lat_margin &&
+            node.geo.lon > min_b.lon + lon_margin &&
+            node.geo.lon < max_b.lon - lon_margin)
+            node_ids.push_back(id);
+    }
 
     std::uniform_int_distribution<size_t> node_dist(0, node_ids.size() - 1);
     std::uniform_int_distribution<int>    batt_dist(3, 95);
-    std::uniform_int_distribution<int>    status_dist(0, 4); // 0-3 available, 4 damaged
+    std::uniform_int_distribution<int>    status_dist(0, 4);
 
     fleet_.clear();
     for (int i = 0; i < count; ++i) {
