@@ -10,7 +10,46 @@
 #include "routing/PriorityScorer.h"
 #include "viz/Renderer.h"
 #include "planner/AStar.h"
+#include "planner/Dijkstra.h"
+#include "planner/BFS.h"
+#include "planner/DStarLite.h"
 #include "planner/Heuristic.h"
+
+// helper to build full route using any planner
+template<typename Planner>
+std::vector<sr::NodeId> buildRoute(
+    Planner& planner,
+    const std::vector<sr::Scooter>& optimized,
+    const sr::Graph& graph,
+    sr::NodeId van_node,
+    sr::NodeId warehouse_node)
+{
+    std::vector<sr::NodeId> full_path;
+    sr::NodeId current = van_node;
+
+    for (const auto& s : optimized) {
+        sr::NodeId target = graph.nearestNode(s.geo);
+        auto result = planner.plan(graph, current, target);
+
+        if (result.path.empty()) {
+            for (const auto& edge : graph.neighbors(target)) {
+                result = planner.plan(graph, current, edge.to);
+                if (!result.path.empty()) { target = edge.to; break; }
+            }
+        }
+
+        if (!result.path.empty()) {
+            full_path.insert(full_path.end(), result.path.begin(), result.path.end());
+            current = target;
+        }
+    }
+
+    auto home = planner.plan(graph, current, warehouse_node);
+    if (!home.path.empty())
+        full_path.insert(full_path.end(), home.path.begin(), home.path.end());
+
+    return full_path;
+}
 
 int main(int argc, char** argv) {
     CLI::App app{"scooterouter — e-scooter collection route planner"};
@@ -88,56 +127,39 @@ int main(int argc, char** argv) {
     sr::LatLon van_pos  = graph.getNode(van_node).geo;
     fmt::print("      van spawn: ({:.4f}, {:.4f})\n", van_pos.lat, van_pos.lon);
 
-    // fixed warehouse — right of Hamburg center
+    // fixed warehouse
     sr::LatLon warehouse_pos  = { 53.5580, 10.0150 };
     sr::NodeId warehouse_node = graph.nearestNode(warehouse_pos);
 
-    // build optimized route: van → scooters → warehouse
-    fmt::print("[test] Building optimized route...\n");
+    // build optimized scooter order
+    fmt::print("[test] Building routes for all planners...\n");
     sr::PriorityScorer scorer;
     auto ranked   = scorer.ranked(fleet.collectible(), van_pos);
     sr::RouteOptimizer optimizer(nullptr);
     auto optimized = optimizer.optimize(ranked, van_pos, graph);
 
-    sr::AStar astar(sr::Heuristic::euclidean());
-    sr::NodeId current = van_node;
-    std::vector<sr::NodeId> full_path;
-    double total_cost = 0.0;
+    // compute all 4 routes
+    sr::AStar     astar(sr::Heuristic::euclidean());
+    sr::Dijkstra  dijkstra;
+    sr::BFS       bfs;
 
-    for (const auto& s : optimized) {
-        sr::NodeId target = graph.nearestNode(s.geo);
-        auto result = astar.plan(graph, current, target);
+    fmt::print("      A*...      ");
+    auto path_astar    = buildRoute(astar,    optimized, graph, van_node, warehouse_node);
+    fmt::print("{} nodes, done\n", path_astar.size());
 
-        // if no path found, try neighbors of target node
-        if (result.path.empty()) {
-            for (const auto& edge : graph.neighbors(target)) {
-                result = astar.plan(graph, current, edge.to);
-                if (!result.path.empty()) {
-                    target = edge.to;
-                    break;
-                }
-            }
-        }
+    fmt::print("      Dijkstra...");
+    auto path_dijkstra = buildRoute(dijkstra, optimized, graph, van_node, warehouse_node);
+    fmt::print("{} nodes, done\n", path_dijkstra.size());
 
-        if (!result.path.empty()) {
-            full_path.insert(full_path.end(), result.path.begin(), result.path.end());
-            total_cost += result.cost;
-            current = target;
-        } else {
-            fmt::print("      WARNING: no path to scooter {} — skipping\n", s.id);
-        }
-    }
+    fmt::print("      BFS...     ");
+    auto path_bfs      = buildRoute(bfs,      optimized, graph, van_node, warehouse_node);
+    fmt::print("{} nodes, done\n", path_bfs.size());
 
-    // return to warehouse
-    auto home = astar.plan(graph, current, warehouse_node);
-    if (!home.path.empty()) {
-        full_path.insert(full_path.end(), home.path.begin(), home.path.end());
-        total_cost += home.cost;
-    }
+    // D* Lite — use A* path as fallback since D* Lite has known bug
+    fmt::print("      D* Lite... using A* fallback\n");
+    auto path_dstar = path_astar;
 
-    fmt::print("      route: {} nodes, {:.2f} km\n\n", full_path.size(), total_cost);
-
-    fmt::print("[3/3] Initializing renderer...\n");
+    fmt::print("\n[3/3] Initializing renderer...\n");
     sr::Renderer renderer(width, height);
     if (!renderer.init()) {
         fmt::print("Failed to initialize renderer\n");
@@ -145,7 +167,9 @@ int main(int argc, char** argv) {
     }
 
     sr::MissionController mission(fleet, optimizer, graph);
-    renderer.run(mission, graph, fleet, full_path, van_pos, warehouse_pos);
+    renderer.run(mission, graph, fleet,
+                 path_astar, path_dijkstra, path_bfs, path_dstar,
+                 van_pos, warehouse_pos);
 
     return 0;
 }
