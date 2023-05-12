@@ -23,7 +23,10 @@ public:
     bool init();
     void run(MissionController& mission, Graph& graph,
              const FleetManager& fleet,
-             const std::vector<NodeId>& path = {},
+             const std::vector<NodeId>& path_astar,
+             const std::vector<NodeId>& path_dijkstra,
+             const std::vector<NodeId>& path_bfs,
+             const std::vector<NodeId>& path_dstar,
              LatLon van_pos       = {0.0, 0.0},
              LatLon warehouse_pos = {0.0, 0.0});
 
@@ -34,11 +37,12 @@ private:
                 const FleetManager& fleet);
 
     int width_, height_;
-    int  replan_count_     = 0;
-    bool paused_           = false;
-    bool replan_requested_ = false;
-    bool show_fleet_       = true;
-    bool show_path_        = true;
+    bool paused_       = false;
+    bool show_fleet_   = true;
+    bool show_path_    = true;
+
+    // algorithm selection: 0=all, 1=astar, 2=dijkstra, 3=bfs, 4=dstar
+    int active_algo_   = 1;
 
     SDL_Window*   window_   = nullptr;
     SDL_Renderer* renderer_ = nullptr;
@@ -48,7 +52,6 @@ private:
     PathLayer     path_layer_;
     FrontierLayer frontier_layer_;
     UIOverlay     ui_overlay_;
-    DStarLite     dstar_;
 
     LatLon van_pos_       = {0.0, 0.0};
     LatLon warehouse_pos_ = {0.0, 0.0};

@@ -78,7 +78,10 @@ bool Renderer::init() {
 
 void Renderer::run(MissionController& mission, Graph& graph,
                    const FleetManager& fleet,
-                   const std::vector<NodeId>& initial_path,
+                   const std::vector<NodeId>& path_astar,
+                   const std::vector<NodeId>& path_dijkstra,
+                   const std::vector<NodeId>& path_bfs,
+                   const std::vector<NodeId>& path_dstar,
                    LatLon van_pos,
                    LatLon warehouse_pos) {
     van_pos_       = van_pos;
@@ -90,13 +93,19 @@ void Renderer::run(MissionController& mission, Graph& graph,
     proj.setup(graph.minBounds(), graph.maxBounds(),
                width_, height_, map_panel_w);
 
-    const std::vector<NodeId> original_path = initial_path;
-    std::vector<NodeId> path = initial_path;
+    // store all 4 paths
+    const std::vector<NodeId>* paths[4] = {
+        &path_astar, &path_dijkstra, &path_bfs, &path_dstar
+    };
+    PathColor colors[4] = {
+        PATH_ASTAR, PATH_DIJKSTRA, PATH_BFS, PATH_DSTAR
+    };
+    const char* algo_names[4] = { "A*", "Dijkstra", "BFS", "D* Lite" };
 
     // animation state
-    size_t anim_index_  = 0;   // how many nodes of path are drawn
-    int    anim_speed_  = 3;   // nodes advanced per frame
-    bool   anim_done_   = false;
+    size_t anim_index_ = 0;
+    int    anim_speed_ = 3;
+    bool   anim_done_  = false;
 
     bool running = true;
     SDL_Event event;
@@ -115,14 +124,35 @@ void Renderer::run(MissionController& mission, Graph& graph,
                 }
                 if (event.key.keysym.sym == SDLK_f) {
                     show_fleet_ = !show_fleet_;
-                    fmt::print("[Renderer] Fleet markers {}\n", show_fleet_ ? "shown" : "hidden");
+                    fmt::print("[Renderer] Fleet {}\n", show_fleet_ ? "shown" : "hidden");
                 }
                 if (event.key.keysym.sym == SDLK_p) {
                     show_path_ = !show_path_;
                     fmt::print("[Renderer] Path {}\n", show_path_ ? "shown" : "hidden");
                 }
+                // algorithm switching
+                if (event.key.keysym.sym == SDLK_1) {
+                    active_algo_ = 1; anim_index_ = 0; anim_done_ = false;
+                    fmt::print("[Renderer] Algorithm: A* (blue)\n");
+                }
+                if (event.key.keysym.sym == SDLK_2) {
+                    active_algo_ = 2; anim_index_ = 0; anim_done_ = false;
+                    fmt::print("[Renderer] Algorithm: Dijkstra (green)\n");
+                }
+                if (event.key.keysym.sym == SDLK_3) {
+                    active_algo_ = 3; anim_index_ = 0; anim_done_ = false;
+                    fmt::print("[Renderer] Algorithm: BFS (pink)\n");
+                }
+                if (event.key.keysym.sym == SDLK_4) {
+                    active_algo_ = 4; anim_index_ = 0; anim_done_ = false;
+                    fmt::print("[Renderer] Algorithm: D* Lite (yellow)\n");
+                }
+                if (event.key.keysym.sym == SDLK_0) {
+                    active_algo_ = 0; anim_index_ = 0; anim_done_ = true;
+                    fmt::print("[Renderer] Algorithm: All overlaid\n");
+                }
                 // speed controls
-                if (event.key.keysym.sym == SDLK_EQUALS || 
+                if (event.key.keysym.sym == SDLK_EQUALS ||
                     event.key.keysym.sym == SDLK_PLUS) {
                     anim_speed_ = std::min(anim_speed_ + 1, 20);
                     fmt::print("[Renderer] Speed: {}\n", anim_speed_);
@@ -131,24 +161,25 @@ void Renderer::run(MissionController& mission, Graph& graph,
                     anim_speed_ = std::max(anim_speed_ - 1, 1);
                     fmt::print("[Renderer] Speed: {}\n", anim_speed_);
                 }
-                // restart animation
+                // restart
                 if (event.key.keysym.sym == SDLK_r) {
-                    anim_index_ = 0;
-                    anim_done_  = false;
-                    fmt::print("[Renderer] Animation restarted\n");
+                    anim_index_ = 0; anim_done_ = false;
+                    fmt::print("[Renderer] Restarted\n");
                 }
             }
         }
 
         if (!paused_) {
-            // advance animation
-            if (!anim_done_ && !path.empty()) {
+            // advance animation for single algorithm mode
+            if (active_algo_ > 0 && !anim_done_) {
+                const auto& cur_path = *paths[active_algo_ - 1];
                 anim_index_ += anim_speed_;
-                if (anim_index_ >= path.size()) {
-                    anim_index_ = path.size();
+                if (anim_index_ >= cur_path.size()) {
+                    anim_index_ = cur_path.size();
                     if (!anim_done_) {
                         anim_done_ = true;
-                        fmt::print("[Renderer] Route complete!\n");
+                        fmt::print("[Renderer] {} route complete!\n",
+                                   algo_names[active_algo_ - 1]);
                     }
                 }
             }
@@ -161,15 +192,25 @@ void Renderer::run(MissionController& mission, Graph& graph,
             if (show_fleet_)
                 scooter_layer_.draw(renderer_, fleet, proj);
 
-            // draw path up to current animation index
-            if (show_path_ && anim_index_ > 0) {
-                std::vector<NodeId> visible_path(
-                    path.begin(),
-                    path.begin() + anim_index_);
-                path_layer_.draw(renderer_, visible_path, graph, proj, 0);
+            if (show_path_) {
+                if (active_algo_ == 0) {
+                    // draw all 4 overlaid statically
+                    for (int i = 0; i < 4; ++i)
+                        path_layer_.draw(renderer_, *paths[i], graph, proj, 0, colors[i]);
+                } else {
+                    // draw animated single algorithm
+                    const auto& cur_path = *paths[active_algo_ - 1];
+                    if (anim_index_ > 0) {
+                        std::vector<NodeId> visible(
+                            cur_path.begin(),
+                            cur_path.begin() + anim_index_);
+                        path_layer_.draw(renderer_, visible, graph, proj, 0,
+                                         colors[active_algo_ - 1]);
+                    }
+                }
             }
 
-            // draw warehouse icon
+            // draw warehouse
             Vec2 wh = proj.project(warehouse_pos_);
             if (warehouse_texture_) {
                 SDL_Rect dst { static_cast<int>(wh.x) - 20,
@@ -178,13 +219,16 @@ void Renderer::run(MissionController& mission, Graph& graph,
             }
 
             // draw van at current animated position
-            if (van_texture_ && !path.empty()) {
-                NodeId current_node = path[std::min(anim_index_, path.size()-1)];
-                if (graph.hasNode(current_node)) {
-                    Vec2 vp = proj.project(graph.getNode(current_node).geo);
-                    SDL_Rect dst { static_cast<int>(vp.x) - 20,
-                                   static_cast<int>(vp.y) - 12, 40, 24 };
-                    SDL_RenderCopy(renderer_, van_texture_, nullptr, &dst);
+            if (van_texture_ && active_algo_ > 0) {
+                const auto& cur_path = *paths[active_algo_ - 1];
+                if (!cur_path.empty()) {
+                    NodeId cur_node = cur_path[std::min(anim_index_, cur_path.size()-1)];
+                    if (graph.hasNode(cur_node)) {
+                        Vec2 vp = proj.project(graph.getNode(cur_node).geo);
+                        SDL_Rect dst { static_cast<int>(vp.x) - 20,
+                                       static_cast<int>(vp.y) - 12, 40, 24 };
+                        SDL_RenderCopy(renderer_, van_texture_, nullptr, &dst);
+                    }
                 }
             }
 
