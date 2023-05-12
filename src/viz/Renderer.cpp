@@ -194,9 +194,12 @@ void Renderer::run(MissionController& mission, Graph& graph,
 
             if (show_path_) {
                 if (active_algo_ == 0) {
-                    // draw all 4 overlaid statically
+                    PathOffset offsets[4] = {
+                        OFFSET_ASTAR, OFFSET_DIJKSTRA, OFFSET_BFS, OFFSET_DSTAR
+                    };
                     for (int i = 0; i < 4; ++i)
-                        path_layer_.draw(renderer_, *paths[i], graph, proj, 0, colors[i]);
+                        path_layer_.draw(renderer_, *paths[i], graph, proj, 0,
+                                         colors[i], offsets[i]);
                 } else {
                     // draw animated single algorithm
                     const auto& cur_path = *paths[active_algo_ - 1];
